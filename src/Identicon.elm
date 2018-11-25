@@ -34,10 +34,10 @@ identicon =
 passed into both the hasher and colorer.  Here's how to create an identicon
 that's always the color red:
 
-    import Color exposing (rgb)
+    import Color exposing (rgb255)
 
     main =
-        custom defaultHash (always <| rgb 255 0 0) "200px" "Hello Identicon!"
+        custom defaultHash (always <| rgb255 255 0 0) "200px" "Hello Identicon!"
 -}
 custom : (String -> Int) -> (String -> Color) -> String -> String -> Html msg
 custom hasher colorer size string =
@@ -49,14 +49,14 @@ custom hasher colorer size string =
         pixels : List (Svg msg)
         pixels =
             List.range 0 14
-                |> List.filter (\i -> Bitwise.shiftRightBy i hash % 2 == 0)
+                |> List.filter (\i -> hash |> Bitwise.shiftRightBy i |> modBy 2 |> (==) 0)
                 |> List.map toCoordinates
                 |> (\l -> List.append l <| List.map mirror l)
                 |> List.map pixel
     in
         Svg.svg
             [ Attr.viewBox "0 0 5 5"
-            , Attr.fill (colorer string |> toRgbString)
+            , Attr.fill (colorer string |> Color.toCssString)
             , Attr.height size
             , Attr.width size
             , Attr.shapeRendering "crispEdges"
@@ -104,7 +104,7 @@ toCoordinates i =
 
         y : Int
         y =
-            i % 5
+            modBy 5 i
     in
         ( x, y )
 
@@ -116,25 +116,17 @@ mirror =
 
 color : Int -> Color
 color hash =
-    Color.hsl (degrees <| toFloat <| hash % 360) 0.5 0.7
-
-
-toRgbString : Color -> String
-toRgbString color =
     let
-        { red, green, blue } =
-            Color.toRgb color
+        hue = toFloat (modBy 100 hash) / 100
     in
-        List.map toString [ red, green, blue ]
-            |> String.join ","
-            |> \rgbs -> "rgb(" ++ rgbs ++ ")"
+        Color.hsl hue 0.5 0.7
 
 
 pixel : ( Int, Int ) -> Svg msg
 pixel ( x, y ) =
     Svg.rect
-        [ Attr.y <| toString y
-        , Attr.x <| toString x
+        [ Attr.y <| String.fromInt y
+        , Attr.x <| String.fromInt x
         , Attr.width "1"
         , Attr.height "1"
         ]
